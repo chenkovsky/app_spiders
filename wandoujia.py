@@ -14,7 +14,7 @@ class AppItem(scrapy.Item):
 class WanDoujiaSpider(scrapy.Spider):
     name = "wandoujia"
     start_urls = (
-        'http://t.wdjcdn.com/upload/www/wandoujia.com/nav.js?1',
+        'http://www.wandoujia.com/category/app',
     )
 
     def header(self):
@@ -29,17 +29,14 @@ class WanDoujiaSpider(scrapy.Spider):
                                       callback=self.parse)
 
     def parse(self, response):
-        tokens = response.body.split("<a class=\\\"cate-link\\\"")
+        soup = BeautifulSoup(response.body)
+        tokens = soup.select("li.parent-cate a.cate-link")
         for token in tokens:
-            sub_tokens = token.split("</a> <ul> <li")
-            category = sub_tokens[0].split("\"")[1][5:-1]
-            if category == "class=":
-                continue
-            url = "http://www.wandoujia.com/tag/" + category
+            url = token['href']
             yield scrapy.http.Request(url=url,
                                       headers=self.header(),
                                       callback=self.CrawlAppPage,
-                                      meta={"category": category})
+                                      meta={"category": token['title']})
 
     # 获取某个分类下的页数
     def CrawlAppPage(self, response):
